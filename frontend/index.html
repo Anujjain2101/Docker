@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Docker 3-Tier Demo</title>
+</head>
+<body>
+  <h1>Docker 3-Tier Demo</h1>
+
+  <section>
+    <h2>Rate Jadeja's Docker/Kubernetes Session</h2>
+    <input id="first_name" placeholder="First name">
+    <input id="last_name" placeholder="Last name">
+    <label for="rating">Rating:</label>
+    <select id="rating">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5" selected>5</option>
+    </select>
+    <button onclick="addRating()">Submit Rating</button>
+
+    <h3>Ratings Summary</h3>
+    <div id="ratings-summary">Loading...</div>
+  </section>
+
+  <script>
+    // users feature removed; only ratings remain
+
+    async function loadRatings() {
+      try {
+        const res = await fetch('/api/ratings-summary');
+        const json = await res.json();
+        const el = document.getElementById('ratings-summary');
+        if (json.total === 0) {
+          el.textContent = 'No ratings yet';
+          return;
+        }
+        let html = `<p>Total ratings: ${json.total}</p>`;
+        html += '<ul>';
+        for (let r = 1; r <= 5; r++) {
+          html += `<li>${r}: ${json.counts[r] || 0} (${json.percentages[r]}%)</li>`;
+        }
+        html += '</ul>';
+        el.innerHTML = html;
+      } catch (err) {
+        console.error('Failed to load ratings', err);
+      }
+    }
+
+    async function addRating() {
+      const first_name = document.getElementById('first_name').value;
+      const last_name = document.getElementById('last_name').value;
+      const rating = Number(document.getElementById('rating').value);
+
+      try {
+        const res = await fetch('/api/ratings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ first_name, last_name, rating })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Error: ' + (err.error || res.statusText));
+          return;
+        }
+        document.getElementById('first_name').value = '';
+        document.getElementById('last_name').value = '';
+        document.getElementById('rating').value = '5';
+        loadRatings();
+      } catch (err) {
+        console.error('Submit rating failed', err);
+      }
+    }
+
+    loadRatings();
+  </script>
+</body>
+</html>
